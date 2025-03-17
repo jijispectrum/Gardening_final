@@ -33,22 +33,52 @@ from django.contrib.auth.decorators import login_required
 from .models import Query
 from .utils import get_gardening_advice  # Import the function from utils.py
 
+# @login_required
+# def chatbot(request):
+#     response = None
+#     chat_history = Query.objects.filter(user=request.user).order_by('-timestamp')[:10]
+
+#     if request.method == 'POST':
+#         question = request.POST.get('question', '').strip()
+
+#         if question:  # Ensure the input is not empty
+#             try:
+#                 response = get_gardening_advice(question)
+#                 Query.objects.create(user=request.user, question=question, response=response)
+#             except Exception as e:
+#                 response = f"An error occurred: {str(e)}"  # Handles AI errors gracefully
+
+#     return render(request, 'pages/chatbot.html', {'response': response, 'chat_history': chat_history})
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.db.models import Prefetch
+import asyncio
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import Query
+from .utils import get_gardening_advice
+
 @login_required
 def chatbot(request):
-    response = None
-    chat_history = Query.objects.filter(user=request.user).order_by('-timestamp')[:10]
+    if request.method == "POST":
+        question = request.POST.get("question", "").strip()
 
-    if request.method == 'POST':
-        question = request.POST.get('question', '').strip()
-
-        if question:  # Ensure the input is not empty
+        if question:
             try:
-                response = get_gardening_advice(question)
+                response = get_gardening_advice(question)  # Get AI response
                 Query.objects.create(user=request.user, question=question, response=response)
+                return JsonResponse({"response": response})  # Send response as JSON
             except Exception as e:
-                response = f"An error occurred: {str(e)}"  # Handles AI errors gracefully
+                return JsonResponse({"response": f"An error occurred: {str(e)}"})
 
-    return render(request, 'pages/chatbot.html', {'response': response, 'chat_history': chat_history})
+    chat_history = Query.objects.filter(user=request.user).order_by("-timestamp")[:10]
+    return render(request, "pages/chat.html", {"chat_history": chat_history})
+
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import Query
+from .utils import get_gardening_advice
+
 
 
 # clear_history views
@@ -113,3 +143,17 @@ def logout_view(request):
     logout(request)
     messages.success(request,'Logged out successfuly!')
     return redirect('home')
+
+
+from django.http import JsonResponse
+
+@login_required
+def load_chat_history(request):
+    chat_history = Query.objects.filter(user=request.user).order_by('-timestamp')[:10]
+    
+    history_data = [
+        {"question": chat.question, "response": chat.response, "timestamp": chat.timestamp.strftime("%Y-%m-%d %H:%M")}
+        for chat in chat_history
+    ]
+
+    return JsonResponse({"history": history_data})

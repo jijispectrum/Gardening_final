@@ -18,7 +18,7 @@
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@100..700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 
     <script defer type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-    <script defer nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script defer nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons.js"></script>
 
     <style>
         /* Optimized CSS */
@@ -28,7 +28,7 @@
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 10px;
-            background:rgb(228, 225, 225);
+            background: rgb(228, 225, 225);
         }
         .message {
             padding: 8px 12px;
@@ -50,6 +50,12 @@
         }
         .chat-input {
             flex: 1;
+        }
+        .timestamp {
+            font-size: 12px;
+            color: #666;
+            display: block;
+            margin-top: 2px;
         }
     </style>
 </head>
@@ -103,12 +109,12 @@
                 <div class="message user-message"><strong>You:</strong> {{ chat.question }}</div>
                 <div class="message bot-message"><strong>Gardening AI:</strong> {{ chat.response }}</div>
                 <small class="timestamp">{{ chat.timestamp|date:"d F Y" }}</small>
-                {% endfor %}
+            {% endfor %}
         </div>
 
         <!-- Chat Input -->
         <div class="input-area mt-3">
-            <form class="w-100 d-flex" method="post" action="{% url 'chatbot' %}">
+            <form id="chatForm" class="w-100 d-flex" method="post" action="{% url 'chatbot' %}">
                 {% csrf_token %}
                 <textarea id="chatInput" name="question" class="form-control" placeholder="Ask your gardening question..." rows="1"></textarea>
                 <button class="btn btn-success ms-2" type="submit"><ion-icon name="send"></ion-icon></button>
@@ -117,17 +123,51 @@
     </div>
 </div>
 
-<!-- Optimized JavaScript -->
 <script>
-    document.getElementById('chatInput').addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = this.scrollHeight + 'px';
+    document.addEventListener("DOMContentLoaded", function() {
+        const chatForm = document.getElementById("chatForm");
+        const chatInput = document.getElementById("chatInput");
+        const chatMessages = document.getElementById("chatMessages");
+    
+        chatForm.onsubmit = async function(event) {
+            event.preventDefault(); // Prevent page reload
+    
+            let userMessage = chatInput.value.trim();
+            if (!userMessage) return;
+    
+            // Instantly display user message
+            chatMessages.innerHTML += `<div class="message user-message"><strong>You:</strong> ${userMessage}</div>`;
+            chatInput.value = ""; // Clear input field
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to latest
+    
+            // Show typing indicator
+            let botThinking = document.createElement("div");
+            botThinking.id = "botThinking";
+            botThinking.className = "message bot-message";
+            botThinking.innerHTML = "<strong>Gardening AI:</strong> <em>Typing...</em>";
+            chatMessages.appendChild(botThinking);
+    
+            try {
+                let response = await fetch("{% url 'chatbot' %}", {
+                    method: "POST",
+                    headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams({ "question": userMessage })
+                });
+    
+                let data = await response.json();
+                botThinking.remove(); // Remove "Typing..." indicator
+    
+                // Show bot response
+                chatMessages.innerHTML += `<div class="message bot-message"><strong>Gardening AI:</strong> ${data.response}</div>`;
+                chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll
+            } catch (error) {
+                botThinking.remove();
+                chatMessages.innerHTML += `<div class="message bot-message error"><strong>Error:</strong> Could not fetch response.</div>`;
+            }
+        };
     });
-
-    function logoutbtn() {
-        window.location.href = "{% url 'logout_view' %}";
-    }
-</script>
+    </script>
+    
 
 </body>
-</html> 
+</html>

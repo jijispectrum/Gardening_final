@@ -121,6 +121,7 @@ STATICFILES_DIRS = [
     BASE_DIR / 'C:/Users/PYTHON/Music/Gardening_Chatbot-main/gardenproject/static',  # If you have a global static directory at project level
 ]
 
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 

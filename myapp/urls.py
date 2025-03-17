@@ -10,5 +10,5 @@ urlpatterns = [
     path('about/',views.about,name='about'),
     path('logout/',views.logout_view,name='logout_view'),
     path('clear_chat_history/',views.clear_chat_history,name='clear_chat_history'),
-    # path('chat_history/',views.chat_history,name='chat_history')
+    path('load-chat-history/', views.load_chat_history, name='load_chat_history'),  # ✅ Add this line    # path('chat_history/',views.chat_history,name='chat_history')
 ]
